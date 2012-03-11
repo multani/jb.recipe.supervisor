@@ -1,0 +1,2 @@
+include *.rst supervisord-sample.conf
+exclude MANIFEST.in buildout.cfg
