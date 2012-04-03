@@ -21,31 +21,33 @@ class InstallSupervisor(object):
         self.output_cfg_file = os.path.join(options['output-dir'],
                                             'supervisord.conf')
 
+    def _make_options(self, args):
+        return Options(self.buildout, self.name, args)
+
+    def _install_template(self):
+        template_options = self._make_options({
+            'input': self.cfg,
+            'output': self.output_cfg_file,
+        })
+        template_options._created = []
+
+        return Template(self.buildout, self.name, template_options).install()
+
     def install(self):
         buildout = self.buildout
         name = self.name
         paths = []
 
-        def make_options(args):
-            return Options(buildout, name, args)
+        paths.extend(self._install_template())
 
-        template_options = make_options({
-            'input': self.cfg,
-            'output': self.output_cfg_file,
-        })
-        template_options._created = []
-        paths.extend(
-            Template(buildout, name, template_options).install()
-        )
-
-        supervisord_options = make_options({
+        supervisord_options = self._make_options({
             'eggs': 'supervisor',
             'scripts': 'supervisord=supervisord',
             'arguments': repr(['-c', self.output_cfg_file]),
         })
         paths.extend(Scripts(buildout, name, supervisord_options).install())
 
-        supervisorctl_options = make_options({
+        supervisorctl_options = self._make_options({
             'eggs': 'supervisor',
             'scripts': 'supervisorctl=supervisorctl',
             'arguments': repr(['-c', self.output_cfg_file]),
@@ -55,4 +57,6 @@ class InstallSupervisor(object):
         return paths
 
     def update(self):
-        return []
+        paths = []
+        paths.extend(self._install_template())
+        return paths
